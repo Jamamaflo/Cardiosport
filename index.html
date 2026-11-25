@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Programme Cardio Évolutif</title>
+<style>
+:root{
+  --bg:#000000; --card:#17191f; --text:#f1f2f4; --muted:#a1a1aa;
+  --accent:#2563eb; --z1:#60a5fa; --z2:#22c55e; --z3:#f59e0b; --z4:#ef4444; --z5:#7c3aed;
+  --border:#30333b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#12141a;--card:#1c1f27;--text:#f1f2f4;--muted:#9aa3af;--border:#2a2e38}
+}
+:root[data-theme="dark"]{--bg:#000000;--card:#17191f;--text:#f1f2f4;--muted:#a1a1aa;--border:#30333b}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0 auto;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:560px}
+h1{font-size:1.25rem;margin:12px 0 4px}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.sessions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sess-btn{padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:.82rem;cursor:pointer;text-align:left}
+.sess-btn.active{border-color:var(--accent);background:var(--accent);color:#fff}
+.hr-display{text-align:center;padding:20px 0}
+.hr-num{font-size:3.2rem;font-weight:700;line-height:1}
+.hr-unit{color:var(--muted);font-size:.9rem}
+.zone-badge{display:inline-block;margin-top:10px;padding:6px 14px;border-radius:20px;font-weight:600;color:#fff;font-size:.9rem}
+.timer{font-size:2rem;font-weight:700;text-align:center;margin:8px 0}
+.phase-label{text-align:center;color:var(--muted);font-size:.85rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+button.action,.action{padding:10px 18px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:.9rem;cursor:pointer}
+button.action.secondary,.action.secondary{background:var(--border);color:var(--text)}
+button.action.danger{background:#ef4444;color:#fff}
+button.action:disabled{opacity:.5}
+.target-range{text-align:center;color:var(--muted);font-size:.85rem;margin-top:4px}
+.status{text-align:center;font-size:.8rem;color:var(--muted);margin-top:8px}
+.week-badge{display:inline-block;background:var(--accent);color:#fff;border-radius:8px;padding:3px 10px;font-size:.8rem;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500}
+.empty{color:var(--muted);font-size:.85rem;text-align:center;padding:10px 0}
+.small{font-size:.75rem;color:var(--muted);line-height:1.4}
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+input[type="date"],input[type="datetime-local"],input[type="text"],input[type="number"]{width:100%;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text)}
+
+:root{--ok:#16a34a}
+.card.in-zone{background:var(--ok);border-color:var(--ok);color:#fff}
+.card.in-zone .hr-unit,.card.in-zone .target-range,.card.in-zone .status,.card.in-zone .phase-label,.card.in-zone .phase-next,.card.in-zone .total-line{color:#eafff0}
+.card.in-zone .zone-badge{background:rgba(255,255,255,.22)!important;border:1px solid #fff}
+.card.transition-zone{background:#b45309;border-color:#b45309;color:#fff}
+.card.transition-zone .hr-unit,.card.transition-zone .target-range,.card.transition-zone .status,.card.transition-zone .phase-label,.card.transition-zone .phase-next,.card.transition-zone .total-line{color:#fff7ed}
+.card.transition-zone .zone-badge{background:rgba(255,255,255,.18)!important;border:1px solid #fff}
+.card.out-zone{border-color:#ef4444}
+.phase-count{font-size:1.6rem;font-weight:700;text-align:center;line-height:1.1;margin-top:6px}
+.phase-next{text-align:center;color:var(--muted);font-size:.8rem;margin-bottom:6px}
+.total-line{text-align:center;color:var(--muted);font-size:.85rem}
+.history-date{line-height:1.25;white-space:nowrap}
+.history-date .day{display:block}
+.history-date .time{display:block}
+.history-action{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;width:32px;height:32px;padding:0;font-size:1.15rem;line-height:1;cursor:pointer}
+.history-action:active{background:var(--border)}
+.history-detail{display:none;background:var(--bg);color:var(--muted);font-size:.72rem;line-height:1.35}
+.history-detail.open{display:table-row}
+.history-detail td{padding:7px 8px;border-bottom:1px solid var(--border)}
+.history-detail .delete-detail{margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 7px;cursor:pointer}
+
+canvas#chart{width:100%;height:210px;display:block}
+</style>
+
+<script>
+let cardioWakeLock = null;
+
+async function activerEcranActif(){
+  if(!("wakeLock" in navigator)) return;
+  try{
+    cardioWakeLock = await navigator.wakeLock.request("screen");
+    cardioWakeLock.addEventListener("release",()=>{cardioWakeLock=null});
+  }catch(e){ console.log("Wake Lock indisponible",e); }
+}
+async function libererEcranActif(){
+  if(cardioWakeLock){
+    try{await cardioWakeLock.release()}catch(e){}
+    cardioWakeLock=null;
+  }
+}
+document.addEventListener("visibilitychange",async()=>{
+  if(document.visibilityState==="visible" && timerInterval){
+    await activerEcranActif();
+  }
+});
+</script>
+
+</head>
+<body>
+<h1>🏋️ Programme Cardio Évolutif</h1>
+<div class="sub">Zones calculées avec Karvonen (FC max et FC de repos réglables). Progression prudente, indépendante du matériel.</div>
+
+<div class="card">
+  <span class="week-badge" id="weekBadge">Semaine 1</span>
+  <strong style="display:block;margin-top:4px">Plan de la semaine</strong>
+  <div class="sessions" id="sessionList"></div>
+  <div class="status" id="recoStatus"></div>
+  <div class="small" id="progressionStatus" style="text-align:center;margin-top:8px"></div>
+</div>
+
+<div class="card">
+  <strong>⚙️ Paramètres</strong>
+  <div class="settings" style="margin-top:10px">
+    <label class="small">FC maximale
+      <input type="number" id="hrMaxInput" min="120" max="220" step="1">
+    </label>
+    <label class="small">FC de repos
+      <input type="number" id="hrRestInput" min="30" max="120" step="1">
+    </label>
+    <label class="small">Début du programme
+      <input type="date" id="startDateInput">
+    </label>
+  </div>
+  <div class="row">
+    <button class="action secondary" id="btnSaveSettings">Enregistrer</button>
+    <button class="action secondary" id="btnTheme">🌙 Thème</button>
+  </div>
+  <div class="status" id="settingsStatus"></div>
+  <div class="small" style="margin-top:8px">Repère : les zones cardiaques sont indicatives. Une FCmax estimée à 170 bpm n'est pas une mesure d'épreuve d'effort. En cas de douleur thoracique, malaise, essoufflement inhabituel ou palpitations, arrête la séance et demande un avis médical.</div>
+</div>
+
+<div class="card" id="hrCard">
+  <div class="row"><button class="action" id="btnConnect">🔗 Connecter le brassard</button></div>
+  <div class="status" id="btStatus">Non connecté</div>
+  <div class="hr-display">
+    <div class="hr-num" id="hrVal">--</div>
+    <div class="hr-unit">bpm</div>
+    <div class="zone-badge" id="zoneBadge" style="background:var(--muted)">Zone --</div>
+  </div>
+  <div class="target-range" id="targetRange">Cible : --</div>
+</div>
+
+<div class="card">
+  <strong>Suivi de la séance</strong>
+  <canvas id="chart"></canvas>
+  <div class="status" id="projText">Plan de la séance : bande verte = zone cible.</div>
+  <div class="small" style="text-align:center;margin-top:4px">Bande verte : zone cible · bande orange inclinée : montée progressive entre zones · trait vert/rouge : ta FC · pointillé bleu : tendance sur 60 s</div>
+</div>
+
+<div class="card" id="timerCard">
+  <div class="phase-label" id="phaseLabel">Phase --</div>
+  <div class="phase-count" id="phaseCount">--:--</div>
+  <div class="phase-next" id="phaseNext">temps à passer dans cette zone</div>
+  <div class="total-line">Séance restante : <strong id="timerVal">--:--</strong></div>
+  <div class="row">
+    <button class="action" id="btnStart">▶ Démarrer</button>
+    <button class="action secondary" id="btnPause" disabled>⏸ Pause</button>
+    <button class="action danger" id="btnFinish" disabled>✔ Terminer & enregistrer</button>
+    <button class="action secondary" id="btnReset">↺ Réinitialiser</button>
+    <label class="small" style="align-self:center"><input type="checkbox" id="soundOn" checked> 🔊 Sons</label>
+  </div>
+</div>
+
+
+<div class="card" id="manualEntryCard">
+  <strong>＋ Ajouter une séance manuellement</strong>
+  <div class="small" style="margin:6px 0 12px">Pour enregistrer une séance non détectée ou réalisée sans le brassard. Les champs marqués * sont obligatoires.</div>
+  <div class="settings">
+    <label class="small">Date et heure *
+      <input type="datetime-local" id="manualDate" required>
+    </label>
+    <label class="small">Semaine *
+      <input type="number" id="manualWeek" min="1" max="100" step="1" required>
+    </label>
+    <label class="small" style="grid-column:1/-1">Nom de la séance *
+      <input type="text" id="manualName" maxlength="70" placeholder="Ex. Endurance fondamentale" required>
+    </label>
+    <label class="small">Durée (minutes) *
+      <input type="number" id="manualDuration" min="1" max="600" step="1" placeholder="45" required>
+    </label>
+    <label class="small">FC moyenne (bpm)
+      <input type="number" id="manualAvg" min="40" max="240" step="1" placeholder="134">
+    </label>
+    <label class="small">FC maximale (bpm)
+      <input type="number" id="manualMax" min="40" max="250" step="1" placeholder="Facultatif">
+    </label>
+    <label class="small">Temps dans la cible (%)
+      <input type="number" id="manualPct" min="0" max="100" step="1" placeholder="Facultatif">
+    </label>
+  </div>
+  <div class="row">
+    <button class="action" id="btnManualSave" type="button">＋ Enregistrer la séance</button>
+  </div>
+  <div class="status" id="manualStatus" aria-live="polite"></div>
+</div>
+
+<div class="card">
+  <strong>Historique des séances</strong>
+  <div id="historyWrap"><div class="empty">Aucune séance enregistrée pour l'instant.</div></div>
+  <div class="row">
+    <button class="action secondary" id="btnExport">⬇ Exporter</button>
+    <label class="action secondary" style="cursor:pointer">⬆ Importer
+      <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
+    </label>
+  </div>
+  <div class="status" id="exportStatus"></div>
+</div>
+
+<script>
+const DEFAULT_HRMAX=170; // Tanaka : 208 - 0,7 x 54 ans
+const DEFAULT_HRREST=66;
+const STORAGE={start:'cardioStart',history:'cardioHistory',hrmax:'cardioHRMax',hrrest:'cardioHRRest',theme:'cardioTheme',draft:'cardioSessionDraft'};
+
+function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function safeSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+function safeRemove(k){try{localStorage.removeItem(k)}catch(e){}}
+
+const storedMax=Number(safeGet(STORAGE.hrmax));
+let HRMAX=(storedMax&&storedMax!==166)?storedMax:DEFAULT_HRMAX;
+let HRREST=Number(safeGet(STORAGE.hrrest))||DEFAULT_HRREST;
+let startDate=safeGet(STORAGE.start);
+if(!startDate){
+  startDate=new Date().toISOString().slice(0,10);
+  safeSet(STORAGE.start,startDate);
+}
+function getWeekNum(){
+  const a=new Date(startDate+'T00:00:00');
+  const b=new Date();
+  return Math.max(1,Math.floor((b-a)/(7*24*3600*1000))+1);
+}
+function pct(p){return Math.round(HRREST+p*(HRMAX-HRREST))} // Karvonen
+function getZones(){
+ return {
+  Z1:{min:pct(.50),max:pct(.60),color:'var(--z1)',label:'Z1 récup'},
+  Z2:{min:pct(.60),max:pct(.70),color:'var(--z2)',label:'Z2 endurance'},
+  Z3:{min:pct(.70),max:pct(.80),color:'var(--z3)',label:'Z3 tempo'},
+  Z4:{min:pct(.80),max:pct(.90),color:'var(--z4)',label:'Z4 fractionné'},
+  Z5:{min:pct(.90),max:HRMAX,color:'var(--z5)',label:'Z5 max'}
+ };
+}
+function ph(list){
+ const order={Z1:1,Z2:2,Z3:3,Z4:4,Z5:5};
+ return list.map(([sec,zone],i)=>{
+  const prev=i?list[i-1][1]:null,steps=prev?Math.max(0,order[zone]-order[prev]):0;
+  // La rampe est intégrée au début de la phase : elle ne rallonge pas la séance.
+  const rampSec=steps?Math.min(Math.floor(sec*.5),steps*(sec<=90?15:30)):0;
+  return {sec,zone,fromZone:steps?prev:null,rampSec};
+ });
+}
+function phaseTarget(phase,elapsedInPhase=0){
+ const zones=getZones(),target=zones[phase.zone];
+ if(!phase.fromZone||!phase.rampSec||elapsedInPhase>=phase.rampSec)return target;
+ const from=zones[phase.fromZone],ratio=Math.max(0,Math.min(1,elapsedInPhase/phase.rampSec));
+ return {
+  min:Math.round(from.min+(target.min-from.min)*ratio),
+  max:Math.round(from.max+(target.max-from.max)*ratio),
+  color:target.color,
+  label:`montée progressive ${from.label} → ${target.label}`
+ };
+}
+function buildSessions(level){
+ const intReps=6+level, z4dur=45+level*5, rec=90;
+ const longReps=4+level, tempoDur=35*60+level*60, edge=(2700-tempoDur)/2;
+ return [
+  {name:'Séance 1 — Endurance fondamentale',phases:ph([[45*60,'Z2']])},
+  {name:'Séance 2 — Intervalles courts',phases:ph([[8*60,'Z1'],...Array(intReps).fill(null).flatMap(()=>[[z4dur,'Z4'],[rec,'Z2']]),[5*60,'Z1']])},
+  {name:'Séance 3 — Endurance légère (LISS)',phases:ph([[5*60,'Z1'],[38*60,'Z2'],[2*60,'Z1']])},
+  {name:'Séance 4 — Fractionné long',phases:ph([[5*60,'Z1'],...Array(longReps).fill(null).flatMap(()=>[[3*60,'Z3'],[2*60,'Z2']]),[3*60,'Z1']])},
+  {name:'Séance 5 — Tempo',phases:ph([[edge,'Z1'],[tempoDur,'Z3'],[edge,'Z1']])},
+  {name:'Séance libre',free:true},
+  {name:'Séance vélo',free:true,bike:true}
+ ];
+}
+
+let weekNum=getWeekNum();
+const importedHistory=[{"date":"2026-11-18T19:12:00.000Z","session":"Séance 1 — Endurance fondamentale","week":8,"level":4,"durationSec":2700,"avgHR":134,"maxHR":null,"pctInZone":99,"complete":true},{"date":"2026-11-08T19:09:33.794Z","session":"Séance 5 — Tempo","week":7,"level":4,"durationSec":2701,"avgHR":141,"maxHR":151,"pctInZone":93,"complete":true},{"date":"2026-11-06T19:17:16.434Z","session":"Séance 3 — Endurance légère (LISS)","week":6,"level":3,"durationSec":2701,"avgHR":133,"maxHR":142,"pctInZone":97,"complete":true},{"date":"2026-11-04T19:22:34.955Z","session":"Séance 2 — Intervalles courts","week":6,"level":3,"durationSec":3061,"avgHR":139,"maxHR":163,"pctInZone":74,"complete":true},{"date":"2026-11-01T19:08:36.697Z","session":"Séance 1 — Endurance fondamentale","week":6,"level":3,"durationSec":2701,"avgHR":132,"maxHR":140,"pctInZone":91,"complete":true},{"date":"2026-10-20T18:15:32.167Z","session":"Séance 5 — Tempo","week":4,"level":2,"durationSec":2701,"avgHR":140,"maxHR":151,"pctInZone":92,"complete":true},{"date":"2026-10-19T18:24:42.920Z","session":"Séance 4 — Fractionné long","week":4,"level":2,"durationSec":3421,"avgHR":139,"maxHR":151,"pctInZone":90,"complete":true},{"date":"2026-10-11T17:50:42.624Z","session":"Séance 3 — Endurance légère (LISS)","week":3,"level":2,"durationSec":2701,"avgHR":133,"maxHR":141,"pctInZone":95,"complete":true},{"date":"2026-10-10T09:52:11.388Z","session":"Séance 2 — Intervalles courts","week":2,"level":1,"durationSec":2221,"avgHR":135,"maxHR":161,"pctInZone":66,"complete":true},{"date":"2026-10-04T18:36:10.040Z","session":"Séance 1 — Endurance fondamentale","week":2,"level":1,"durationSec":2792,"avgHR":137,"maxHR":147,"pctInZone":85,"complete":true},{"date":"2026-10-02T18:14:26.740Z","session":"Séance 4 — Fractionné long","week":1,"level":1,"durationSec":3001,"avgHR":138,"maxHR":153,"pctInZone":89,"complete":true},{"date":"2026-09-30T18:47:23.456Z","session":"Séance 3 — Endurance légère (LISS)","week":1,"level":1,"durationSec":2701,"avgHR":131,"maxHR":144,"pctInZone":90,"complete":true},{"date":"2026-09-28T18:22:54.759Z","session":"Séance 2 — Intervalles courts","week":1,"level":1,"durationSec":2221,"avgHR":134,"maxHR":165,"pctInZone":57,"complete":true},{"date":"2026-09-27T17:58:34.231Z","session":"Séance 1 — Endurance fondamentale","week":1,"level":1,"durationSec":2701,"avgHR":111,"maxHR":118,"pctInZone":98,"complete":true}];
+function mergeHistory(base, extra){
+ const byDay=new Map();
+ [...(Array.isArray(base)?base:[]),...(Array.isArray(extra)?extra:[])].forEach(h=>{
+  if(!h || !h.date || !h.session) return;
+  const day=new Date(h.date).toISOString().slice(0,10);
+  const key=day+'|'+h.session;
+  const old=byDay.get(key);
+  // En cas de doublon, conserver l'enregistrement le plus complet.
+  if(!old || ((h.maxHR!=null?1:0)+(h.avgHR!=null?1:0)+(h.pctInZone!=null?1:0)) >
+             ((old.maxHR!=null?1:0)+(old.avgHR!=null?1:0)+(old.pctInZone!=null?1:0))) byDay.set(key,h);
+ });
+ return [...byDay.values()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+}
+let histAll=[];
+try{histAll=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){histAll=[]}
+histAll=mergeHistory(histAll, importedHistory);
+safeSet(STORAGE.history,JSON.stringify(histAll));
+
+// Les intervalles ont des transitions cardiaques : leur seuil de validation est adapté.
+function sessionWasSuccessful(h){
+  if(!h || !h.complete || h.pctInZone==null) return false;
+  const name=h.session||'';
+  const threshold=name.includes('Intervalles courts')?65:
+                  name.includes('Fractionné long')?80:85;
+  return h.pctInZone>=threshold;
+}
+function getAdaptiveLevel(){
+  const scheduled=Math.min(Math.floor((weekNum-1)/2),4);
+  const recent=histAll.filter(h=>h.complete).slice(0,3);
+  if(scheduled===0 || recent.length<3) return scheduled;
+  const successes=recent.filter(sessionWasSuccessful).length;
+  const lastRecordedLevel=Math.max(0,(Number(recent[0].level)||1)-1);
+  if(successes>=2) return Math.min(scheduled,lastRecordedLevel+1);
+  return Math.min(scheduled,lastRecordedLevel);
+}
+let level=getAdaptiveLevel();
+let SESSIONS=buildSessions(level);
+const doneThisWeek=histAll.filter(h=>h.week===weekNum&&h.complete).length;
+let currentSession=Math.min(doneThisWeek,4);
+let device=null,hrChar=null,currentHR=null,lastVibrate=0,hrSamples=[],sessionStartTs=null,timerInterval=null,trace=[],audioCtx=null,lastInZone=false,lastSound=0;
+let timeLeft=0;
+let freeElapsed=0;
+
+const $=id=>document.getElementById(id);
+
+function refreshProgram(){
+  weekNum=getWeekNum();
+  try{histAll=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){histAll=[]}
+  const scheduled=Math.min(Math.floor((weekNum-1)/2),4);
+  const recent=histAll.filter(h=>h.complete).slice(0,3);
+  const successes=recent.filter(sessionWasSuccessful).length;
+  level=getAdaptiveLevel();
+  SESSIONS=buildSessions(level);
+  const done=histAll.filter(h=>h.week===weekNum&&h.complete).length;
+  currentSession=Math.min(done,4);
+  $('weekBadge').textContent=`Semaine ${weekNum} · Niveau ${level+1}/5`;
+  $('sessionList').innerHTML='';
+  SESSIONS.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='sess-btn'+(i===currentSession?' active':'');
+    b.textContent=(i<done?'✓ ':'')+s.name;
+    b.onclick=()=>{currentSession=i;resetTimer();renderSessions()};
+    $('sessionList').appendChild(b);
+  });
+  $('recoStatus').textContent=done>=5
+    ?'Toutes les séances de la semaine sont faites — repos ou séance bonus au choix.'
+    :`Séance recommandée aujourd'hui : ${SESSIONS[currentSession].name}`;
+  if(recent.length<3){
+    $('progressionStatus').textContent='Progression prudente : le niveau suit le calendrier tant que 3 séances complètes ne sont pas encore disponibles.';
+  }else if(level<scheduled){
+    $('progressionStatus').textContent=`Niveau maintenu : ${successes}/3 des 3 dernières séances validées. Il faut au moins 2 réussites pour débloquer le niveau prévu (${scheduled+1}/5).`;
+  }else{
+    $('progressionStatus').textContent=`Progression autorisée : ${successes}/3 des 3 dernières séances validées. Les hausses restent limitées au calendrier.`;
+  }
+}
+function renderSessions(){
+ document.querySelectorAll('.sess-btn').forEach((b,i)=>b.classList.toggle('active',i===currentSession));
+ const s=SESSIONS[currentSession],zones=getZones();
+ if(s.free){
+  $('recoStatus').textContent=`${s.name} · aucune cible imposée · enregistrement du temps total et du temps passé dans chaque zone cardiaque.`;
+  return;
+ }
+ const sequence=[];
+ s.phases.forEach(p=>{
+  if(!sequence.length||sequence[sequence.length-1]!==p.zone)sequence.push(p.zone);
+ });
+ const expanded=[];
+ sequence.forEach((zone,i)=>{
+  if(i){
+   const prev=sequence[i-1],order={Z1:1,Z2:2,Z3:3,Z4:4,Z5:5};
+   if(order[zone]>order[prev]){
+    for(let n=order[prev]+1;n<order[zone];n++)expanded.push('Z'+n);
+   }
+  }
+  expanded.push(zone);
+ });
+ $('recoStatus').textContent=`Séance sélectionnée : ${s.name} · Enchaînement des zones : ${expanded.join(' → ')}`;
+}
+function isFreeSession(){return !!SESSIONS[currentSession].free}
+function totalDuration(s){return s.free?0:s.phases.reduce((a,p)=>a+p.sec,0)}
+function zoneForHR(hr){
+ const Z=getZones();
+ for(const key of ['Z1','Z2','Z3','Z4','Z5']){
+  if(hr>=Z[key].min&&hr<=Z[key].max)return key;
+ }
+ return hr<Z.Z1.min?'Sous Z1':'Au-dessus Z5';
+}
+function zoneTimeTotals(){
+ const totals={Z1:0,Z2:0,Z3:0,Z4:0,Z5:0};
+ const samples=hrSamples.slice().sort((a,b)=>a.t-b.t);
+ for(let i=0;i<samples.length-1;i++){
+  const dt=Math.max(0,Math.min(5,(samples[i+1].t-samples[i].t)/1000));
+  if(totals[samples[i].zone]!=null)totals[samples[i].zone]+=dt;
+ }
+ return totals;
+}
+function currentPhaseInfo(){
+ const s=SESSIONS[currentSession];
+ const elapsed=totalDuration(s)-timeLeft;
+ let acc=0;
+ for(const p of s.phases){if(elapsed<acc+p.sec)return p;acc+=p.sec}
+ return s.phases[s.phases.length-1];
+}
+function resetTimer(){
+ clearInterval(timerInterval);timerInterval=null;
+ timeLeft=totalDuration(SESSIONS[currentSession]);
+ freeElapsed=0;
+ hrSamples=[];sessionStartTs=null;lastVibrate=0;trace=[];lastInZone=false;
+ $('btnStart').disabled=false;$('btnPause').disabled=true;$('btnFinish').disabled=true;
+ updateDisplay();
+}
+function updateDisplay(){
+ if(isFreeSession()){
+  const elapsed=freeElapsed;
+  $('timerVal').textContent=mmss(elapsed);
+  $('timerVal').parentElement.firstChild.textContent='Temps écoulé : ';
+  $('phaseLabel').textContent=SESSIONS[currentSession].name+' — sans cible';
+  $('phaseCount').textContent='LIBRE';
+  $('phaseNext').textContent='Chronomètre en cours · temps dans les zones calculé selon la FC mesurée';
+  $('targetRange').textContent='Aucune cible cardiaque : observation libre de la fréquence cardiaque';
+  $('projText').textContent='Temps passé dans les zones cardiaques : suivi automatique pendant la séance.';
+  if(currentHR!=null){
+   const z=zoneForHR(currentHR);
+   $('zoneBadge').textContent=z+' · '+currentHR+' bpm';
+   $('zoneBadge').style.background=z.startsWith('Z')?'var(--ok)':'var(--muted)';
+  }else{
+   $('zoneBadge').textContent='FC en attente';
+   $('zoneBadge').style.background='var(--muted)';
+  }
+  drawChart();
+  return;
+ }
+ $('timerVal').parentElement.firstChild.textContent='Séance restante : ';
+ const m=String(Math.floor(timeLeft/60)).padStart(2,'0');
+ const s=String(timeLeft%60).padStart(2,'0');
+ $('timerVal').textContent=`${m}:${s}`;
+ const st=phaseState(),phase=st.p,z=phaseTarget(phase,st.elapsedInPhase);
+ const inRamp=phase.fromZone&&phase.rampSec>st.elapsedInPhase;
+ $('phaseLabel').textContent=inRamp
+  ?`${SESSIONS[currentSession].name} — TRANSITION ${getZones()[phase.fromZone].label} → ${getZones()[phase.zone].label}`
+  :`${SESSIONS[currentSession].name} — ${z.label}`;
+ $('targetRange').textContent=inRamp
+  ?`Cible évolutive : ${z.min}-${z.max} bpm · encore ${mmss(phase.rampSec-st.elapsedInPhase)} de montée`
+  :`Cible : ${z.min}-${z.max} bpm (${z.label})`;
+ updatePhaseCount();checkZone(phase,false,st.elapsedInPhase);drawChart();
+}
+function checkZone(phase,record=true,elapsedInPhase=0){
+  if(isFreeSession()){
+   if(currentHR==null)return;
+   const zone=zoneForHR(currentHR),badge=$('zoneBadge');
+   badge.textContent=zone+' · '+currentHR+' bpm';
+   badge.style.background=zone.startsWith('Z')?'var(--ok)':'var(--muted)';
+   ['hrCard','timerCard'].forEach(id=>{
+    const el=$(id);el.classList.remove('in-zone','transition-zone','out-zone');
+   });
+   if(record&&timerInterval){
+    const last=hrSamples[hrSamples.length-1];
+    if(!last||Date.now()-last.t>=800){
+     hrSamples.push({t:Date.now(),hr:currentHR,zone,inZone:false});
+     trace.push({e:freeElapsed,hr:currentHR,inz:false});
+    }
+   }
+   return;
+  }
+  if(currentHR==null)return;
+  const z=phaseTarget(phase,elapsedInPhase),badge=$('zoneBadge');
+  const inZone=currentHR>=z.min&&currentHR<=z.max;
+  const inRamp=!!(phase.fromZone&&phase.rampSec>elapsedInPhase);
+  const transitioning=!inZone&&inRamp&&currentHR<z.min;
+  badge.textContent=inZone?z.label+' ✓ dans la zone':
+    (transitioning?'Montée progressive · '+z.label:
+      (currentHR<z.min?z.label+' ↑ monte':z.label+' ↓ ralentis'));
+  badge.style.background=inZone?'var(--ok)':(transitioning?'#b45309':'var(--z4)');
+  ['hrCard','timerCard'].forEach(id=>{
+    const el=$(id);
+    el.classList.toggle('in-zone',inZone);
+    el.classList.toggle('transition-zone',transitioning);
+    el.classList.toggle('out-zone',!inZone&&!transitioning);
+  });
+  if(timerInterval&&inZone!==lastInZone&&Date.now()-lastSound>1500){
+    lastSound=Date.now();lastInZone=inZone;inZone?soundIn():soundOut()
+  }
+  if(record&&timerInterval){
+    hrSamples.push({t:Date.now(),hr:currentHR,inZone});
+    if(!inZone&&Date.now()-lastVibrate>8000){
+      lastVibrate=Date.now();
+      if(navigator.vibrate)navigator.vibrate([250,100,250]);
+    }
+  }
+}
+function ensureAudio(){try{if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioCtx=new AC()}if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume()}catch(e){}}
+function beep(seq,type){
+ if(!audioCtx||!$('soundOn').checked)return;
+ let t=audioCtx.currentTime+0.01;
+ seq.forEach(([f,d])=>{
+   const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+   o.type=type;o.frequency.value=f;o.connect(g);g.connect(audioCtx.destination);
+   g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.4,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+   o.start(t);o.stop(t+d+0.02);t+=d;
+ });
+}
+function soundIn(){beep([[660,.12],[880,.12],[1175,.2]],'sine')}
+function soundOut(){beep([[400,.18],[280,.3]],'triangle')}
+const mmss=sec=>String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+function phaseState(){
+ const s=SESSIONS[currentSession],elapsed=totalDuration(s)-timeLeft;
+ let acc=0;
+ for(let i=0;i<s.phases.length;i++){
+  const p=s.phases[i];
+  if(elapsed<acc+p.sec)return{p,remaining:acc+p.sec-elapsed,elapsedInPhase:elapsed-acc,next:s.phases[i+1]||null};
+  acc+=p.sec;
+ }
+ const p=s.phases[s.phases.length-1];
+ return{p,remaining:0,elapsedInPhase:p.sec,next:null};
+}
+function updatePhaseCount(){
+ const st=phaseState(),Z=getZones(),z=phaseTarget(st.p,st.elapsedInPhase);
+ $('phaseCount').textContent=mmss(st.remaining);
+ const transition=st.p.rampSec>st.elapsedInPhase?` · montée progressive vers ${Z[st.p.zone].label}`:'';
+ $('phaseNext').textContent=`cible ${z.min}-${z.max} bpm (${z.label})${transition}`+(st.next?` · ensuite ${Z[st.next.zone].label} ${Z[st.next.zone].min}-${Z[st.next.zone].max} pendant ${mmss(st.next.sec)}`:' · dernière phase');
+}
+function drawChart(){
+ const c=$('chart');if(!c)return;
+ const r=c.getBoundingClientRect();if(!r.width)return;
+ const H=210,dpr=window.devicePixelRatio||1;
+ c.width=Math.round(r.width*dpr);c.height=H*dpr;
+ const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
+ const W=r.width,L=34,R=6,T0=8,B=20,cs=getComputedStyle(document.documentElement);
+ const col=n=>cs.getPropertyValue(n).trim();
+ const s=SESSIONS[currentSession],Z=getZones();
+ if(s.free){
+  const Ttot=Math.max(60,freeElapsed),yMin=Math.max(40,Z.Z1.min-20),yMax=HRMAX+5;
+  const X=e=>L+(W-L-R)*e/Ttot,Y=h=>T0+(H-T0-B)*(1-(Math.min(Math.max(h,yMin),yMax)-yMin)/(yMax-yMin));
+  g.clearRect(0,0,W,H);g.font='10px sans-serif';g.lineWidth=1;g.strokeStyle=col('--border');g.fillStyle=col('--muted');g.textAlign='right';
+  for(let h=Math.ceil(yMin/20)*20;h<=yMax;h+=20){g.beginPath();g.moveTo(L,Y(h));g.lineTo(W-R,Y(h));g.stroke();g.fillText(h,L-4,Y(h)+3)}
+  g.textAlign='center';for(let m=0;m*60<=Ttot;m+=5)g.fillText(m+'′',X(m*60),H-6);
+  for(let i=1;i<trace.length;i++){
+   const a=trace[i-1],b=trace[i];g.strokeStyle='#16a34a';g.beginPath();g.moveTo(X(a.e),Y(a.hr));g.lineTo(X(b.e),Y(b.hr));g.stroke();
+  }
+  $('projText').textContent='Séance libre : courbe de fréquence cardiaque, sans objectif imposé.';
+  return;
+ }
+ const Ttot=totalDuration(s);
+ const yMin=Math.max(40,Z.Z1.min-20),yMax=HRMAX+5;
+ const X=e=>L+(W-L-R)*e/Ttot,Y=h=>T0+(H-T0-B)*(1-(Math.min(Math.max(h,yMin),yMax)-yMin)/(yMax-yMin));
+ g.clearRect(0,0,W,H);g.font='10px sans-serif';g.lineWidth=1;g.strokeStyle=col('--border');g.fillStyle=col('--muted');
+ g.textAlign='right';
+ for(let h=Math.ceil(yMin/20)*20;h<=yMax;h+=20){g.beginPath();g.moveTo(L,Y(h));g.lineTo(W-R,Y(h));g.stroke();g.fillText(h,L-4,Y(h)+3)}
+ g.textAlign='center';
+ for(let m=0;m*60<=Ttot;m+=10)g.fillText(m+'′',X(m*60),H-6);
+ let acc=0;
+ s.phases.forEach(p=>{
+  const target=Z[p.zone];
+  if(p.fromZone&&p.rampSec){
+   const from=Z[p.fromZone],steps=12,stepSec=p.rampSec/steps;
+   // Bande inclinée : la cible cardiaque monte progressivement de l'ancienne zone à la nouvelle.
+   for(let k=0;k<steps;k++){
+    const r0=k/steps,r1=(k+1)/steps;
+    const hi0=from.max+(target.max-from.max)*r0,hi1=from.max+(target.max-from.max)*r1;
+    const lo0=from.min+(target.min-from.min)*r0,lo1=from.min+(target.min-from.min)*r1;
+    const x0=X(acc+stepSec*k),x1=X(acc+stepSec*(k+1));
+    const top=Math.min(Y(hi0),Y(hi1)),bottom=Math.max(Y(lo0),Y(lo1));
+    g.fillStyle='rgba(245,158,11,.35)';
+    g.fillRect(x0,top,Math.max(1,x1-x0),Math.max(1,bottom-top));
+   }
+   const xRampEnd=X(acc+p.rampSec);
+   g.fillStyle='rgba(22,163,74,.28)';
+   g.fillRect(xRampEnd,Y(target.max),Math.max(1,X(acc+p.sec)-xRampEnd),Y(target.min)-Y(target.max));
+  }else{
+   g.fillStyle='rgba(22,163,74,.28)';
+   g.fillRect(X(acc),Y(target.max),X(acc+p.sec)-X(acc),Y(target.min)-Y(target.max));
+  }
+  acc+=p.sec;
+ });
+ const el=Ttot-timeLeft;
+ g.strokeStyle=col('--muted');g.setLineDash([3,3]);g.beginPath();g.moveTo(X(el),T0);g.lineTo(X(el),H-B);g.stroke();g.setLineDash([]);
+ g.lineWidth=2;
+ for(let i=1;i<trace.length;i++){const a=trace[i-1],b=trace[i];g.strokeStyle=b.inz?'#16a34a':'#ef4444';g.beginPath();g.moveTo(X(a.e),Y(a.hr));g.lineTo(X(b.e),Y(b.hr));g.stroke()}
+ const txt=[];
+ if(trace.length>=8){
+   const w=trace.slice(-20),a=w[0],b=w[w.length-1];
+   const slope=b.e>a.e?(b.hr-a.hr)/(b.e-a.e):0,sl=Math.max(-0.6,Math.min(0.6,slope));
+   const horizon=Math.min(60,timeLeft);
+   g.strokeStyle=col('--accent');g.setLineDash([5,4]);g.beginPath();g.moveTo(X(b.e),Y(b.hr));g.lineTo(X(b.e+horizon),Y(b.hr+sl*horizon));g.stroke();g.setLineDash([]);
+   const zoneAt=e=>{let a2=0;for(const p of s.phases){if(e<a2+p.sec)return Z[p.zone];a2+=p.sec}return Z[s.phases[s.phases.length-1].zone]};
+   for(let k=1;k<=horizon;k++){const zz=zoneAt(b.e+k),hp=b.hr+sl*k,ok=hp>=zz.min&&hp<=zz.max;if(ok!==b.inz){txt.push(b.inz?`⚠ tendance : sortie de zone dans ~${k} s`:`↗ tendance : entrée dans la zone dans ~${k} s`);break}}
+   const n=trace.length,inz=trace.filter(t=>t.inz).length,rec=trace.slice(-60),recP=rec.filter(t=>t.inz).length/rec.length;
+   txt.unshift(`Dans la zone : ${Math.round(100*inz/n)} % · projection fin de séance ≈ ${Math.round(100*(inz+timeLeft*recP)/(n+timeLeft))} %`);
+ }else txt.push(trace.length?'Collecte des données…':'Plan de la séance : bande verte = zone cible. Ta FC apparaîtra ici en direct.');
+ $('projText').textContent=txt.join(' — ');
+}
+window.addEventListener('resize',drawChart);
+
+function saveSessionDraft(){
+  if(!timerInterval || sessionStartTs===null) return;
+  try{
+    safeSet(STORAGE.draft,JSON.stringify({
+      savedAt:Date.now(),
+      session:SESSIONS[currentSession].name,
+      sessionIndex:currentSession,
+      week:weekNum,
+      level:level+1,
+      startedAt:sessionStartTs,
+      freeElapsed,timeLeft,hrSamples,trace,currentHR
+    }));
+  }catch(e){}
+}
+function clearSessionDraft(){safeRemove(STORAGE.draft);}
+function recoverSessionDraft(){
+  let d=null;
+  try{d=JSON.parse(safeGet(STORAGE.draft)||'null')}catch(e){}
+  if(!d||!d.startedAt||!d.session)return false;
+  if(Date.now()-Number(d.savedAt||d.startedAt)>24*3600*1000){clearSessionDraft();return false;}
+  const idx=SESSIONS.findIndex(s=>s.name===d.session);
+  if(idx<0)return false;
+  const free=!!SESSIONS[idx].free, planned=totalDuration(SESSIONS[idx]);
+  const elapsed=Math.max(0,Math.round((Date.now()-Number(d.startedAt))/1000));
+  if(!free && elapsed>=planned){
+    currentSession=idx;hrSamples=d.hrSamples||[];trace=d.trace||[];
+    sessionStartTs=Number(d.startedAt);timeLeft=0;
+    saveSession(true);clearSessionDraft();resetTimer();return true;
+  }
+  if(!confirm(`Une séance « ${d.session} » interrompue a été retrouvée. La reprendre ?`)){
+    clearSessionDraft();return false;
+  }
+  currentSession=idx;sessionStartTs=Number(d.startedAt);
+  hrSamples=Array.isArray(d.hrSamples)?d.hrSamples:[];trace=Array.isArray(d.trace)?d.trace:[];
+  currentHR=d.currentHR??null;
+  const gap=Math.max(0,Date.now()-Number(d.savedAt||d.startedAt))/1000;
+  if(free) freeElapsed=Math.round(Number(d.freeElapsed||0)+gap);
+  else {
+    const oldElapsed=Math.max(0,planned-Number(d.timeLeft||planned));
+    timeLeft=Math.max(0,planned-Math.round(oldElapsed+gap));
+  }
+  updateDisplay();return true;
+}
+function saveSession(finishedFully){
+ const durationSec=isFreeSession()?freeElapsed:(sessionStartTs?Math.round((Date.now()-sessionStartTs)/1000):0);
+ const hrs=hrSamples.map(s=>s.hr);
+ const avgHR=hrs.length?Math.round(hrs.reduce((a,b)=>a+b,0)/hrs.length):null;
+ const maxHR=hrs.length?Math.max(...hrs):null;
+ const pctInZone=(!isFreeSession()&&hrSamples.length)?Math.round(100*hrSamples.filter(s=>s.inZone).length/hrSamples.length):null;
+ const zoneSeconds=isFreeSession()?zoneTimeTotals():null;
+ const entry={date:new Date().toISOString(),session:SESSIONS[currentSession].name,week:weekNum,level:level+1,durationSec,avgHR,maxHR,pctInZone,zoneSeconds,complete:!!finishedFully};
+ let hist=[];try{hist=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){}
+ hist.unshift(entry);safeSet(STORAGE.history,JSON.stringify(hist));renderHistory();
+}
+function renderHistory(){
+ let hist=[];try{hist=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){}
+ const wrap=$('historyWrap');
+ if(!hist.length){wrap.innerHTML='<div class="empty">Aucune séance enregistrée pour l’instant.</div>';return}
+ const rows=hist.map((h,i)=>{
+   const d=new Date(h.date);
+   const day=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+   const time=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+   const dur=h.durationSec?`${Math.floor(h.durationSec/60)}min`:'--';
+   const name=(h.session||'').replace(/^Séance \d+ — /,'');
+   const zt=h.zoneSeconds?['Z1','Z2','Z3','Z4','Z5'].map(z=>`${z} ${mmss(Math.round(h.zoneSeconds[z]||0))}`).join(' · '): (h.pctInZone!=null?`${h.pctInZone}% cible`:'--');
+   const max=h.maxHR!=null?`${h.maxHR} bpm`:'non renseignée';
+   return `<tr>
+      <td class="history-date"><span class="day">${day}</span><span class="time">${time}</span></td>
+      <td>S${h.week}</td>
+      <td>${name}</td>
+      <td>${dur}</td>
+      <td>${h.avgHR??'--'}</td>
+      <td>${zt}</td>
+      <td><button type="button" class="history-action" data-i="${i}" aria-label="Voir les détails">›</button></td>
+    </tr>
+    <tr class="history-detail" data-detail="${i}">
+      <td colspan="7">FC max : ${max} · ${zt}
+        <button type="button" class="delete-detail" data-delete="${i}">Supprimer</button>
+      </td>
+    </tr>`;
+ }).join('');
+ wrap.innerHTML=`<div style="overflow-x:auto"><table><tr><th>Date</th><th>Sem.</th><th>Séance</th><th>Durée</th><th>FC<br>moy</th><th>Temps<br>par zone</th><th></th></tr>${rows}</table></div>`;
+}
+$('historyWrap').addEventListener('click',e=>{
+ const detailBtn=e.target.closest('.history-action');
+ if(detailBtn){
+   const i=Number(detailBtn.dataset.i);
+   const row=document.querySelector(`.history-detail[data-detail="${i}"]`);
+   if(row) row.classList.toggle('open');
+   detailBtn.textContent=row && row.classList.contains('open')?'‹':'›';
+   return;
+ }
+ const b=e.target.closest('.delete-detail');if(!b)return;
+ const i=Number(b.dataset.delete);
+ if(!confirm('Supprimer cette séance ?'))return;
+ let hist=[];try{hist=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(err){}
+ hist.splice(i,1);
+ safeSet(STORAGE.history,JSON.stringify(hist));
+ renderHistory();
+ if(sessionStartTs===null){refreshProgram();resetTimer()}
+});
+$('btnStart').onclick=async()=>{
+ if(timerInterval)return;
+ ensureAudio();
+ await activerEcranActif();
+ if(sessionStartTs===null)sessionStartTs=Date.now();
+ timerInterval=setInterval(async()=>{
+   if(!isFreeSession()&&timeLeft<=0){
+     clearInterval(timerInterval);timerInterval=null;
+     await libererEcranActif();
+     if(navigator.vibrate)navigator.vibrate([300,150,300,150,300]);
+     saveSession(true);
+     $('btnFinish').disabled=true;$('btnPause').disabled=true;$('btnStart').disabled=true;
+     $('phaseLabel').textContent='Séance terminée ✔';
+     return;
+   }
+   if(isFreeSession()){
+    freeElapsed++;
+    if(currentHR!=null){
+     const zone=zoneForHR(currentHR),last=hrSamples[hrSamples.length-1];
+     if(!last||Date.now()-last.t>=800)hrSamples.push({t:Date.now(),hr:currentHR,zone,inZone:false});
+     trace.push({e:freeElapsed,hr:currentHR,inz:false});
+    }
+   }else{
+    timeLeft--;
+    if(currentHR!=null){const st=phaseState(),zz=phaseTarget(st.p,st.elapsedInPhase);trace.push({e:totalDuration(SESSIONS[currentSession])-timeLeft,hr:currentHR,inz:currentHR>=zz.min&&currentHR<=zz.max})}
+   }
+   updateDisplay();
+ },1000);
+ $('btnStart').disabled=true;$('btnPause').disabled=false;$('btnFinish').disabled=false;
+ if(isFreeSession())$('timerVal').textContent='00:00';
+};
+$('btnPause').onclick=async()=>{
+ clearInterval(timerInterval);timerInterval=null;
+ await libererEcranActif();
+ $('btnStart').disabled=false;$('btnPause').disabled=true;
+};
+$('btnFinish').onclick=async()=>{
+ clearInterval(timerInterval);timerInterval=null;
+ await libererEcranActif();
+ saveSession(false);resetTimer();
+};
+$('btnReset').onclick=async()=>{
+ await libererEcranActif();
+ resetTimer();
+};
+
+$('btnConnect').onclick=async()=>{
+ ensureAudio();
+ const status=$('btStatus');
+ try{
+   if(!navigator.bluetooth){status.textContent='Web Bluetooth n’est pas disponible dans ce navigateur.';return}
+   status.textContent='Recherche du brassard…';
+   device=await navigator.bluetooth.requestDevice({
+     filters:[{services:['heart_rate']}],
+     optionalServices:['battery_service']
+   });
+   device.addEventListener('gattserverdisconnected',()=>{status.textContent='Brassard déconnecté';});
+   const server=await device.gatt.connect();
+   const service=await server.getPrimaryService('heart_rate');
+   hrChar=await service.getCharacteristic('heart_rate_measurement');
+   await hrChar.startNotifications();
+   hrChar.addEventListener('characteristicvaluechanged',e=>{
+     const val=e.target.value,flags=val.getUint8(0);
+     const hr=(flags&1)?val.getUint16(1,true):val.getUint8(1);
+     currentHR=hr;
+     $('hrVal').textContent=hr;
+     if(isFreeSession())checkZone(null,!!timerInterval,0);
+     else {const st=phaseState();checkZone(st.p,!!timerInterval,st.elapsedInPhase)}
+   });
+   status.textContent='Connecté : '+(device.name||'brassard');
+ }catch(err){
+   console.error(err);
+   status.textContent='Connexion annulée ou impossible. Vérifie que le H1 est allumé et non connecté à un autre appareil.';
+ }
+};
+
+
+function setManualDefaults(){
+ const now=new Date();
+ const local=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ $('manualDate').value=local;
+ $('manualWeek').value=weekNum;
+}
+$('btnManualSave').onclick=()=>{
+ const dateValue=$('manualDate').value;
+ const name=$('manualName').value.trim();
+ const week=Number($('manualWeek').value);
+ const duration=Number($('manualDuration').value);
+ const avgRaw=$('manualAvg').value;
+ const maxRaw=$('manualMax').value;
+ const pctRaw=$('manualPct').value;
+ const avg=avgRaw===''?null:Number(avgRaw);
+ const max=maxRaw===''?null:Number(maxRaw);
+ const pctValue=pctRaw===''?null:Number(pctRaw);
+ const status=$('manualStatus');
+ if(!dateValue||!name||!Number.isInteger(week)||week<1||week>100||!Number.isFinite(duration)||duration<1||duration>600){
+   status.textContent='Renseigne la date, le nom, une semaine valide et une durée comprise entre 1 et 600 minutes.';
+   return;
+ }
+ if((avg!==null&&(!Number.isInteger(avg)||avg<40||avg>240))||
+    (max!==null&&(!Number.isInteger(max)||max<40||max>250))||
+    (pctValue!==null&&(!Number.isInteger(pctValue)||pctValue<0||pctValue>100))){
+   status.textContent='Vérifie les valeurs de FC et le pourcentage (0 à 100).';
+   return;
+ }
+ if(avg!==null&&max!==null&&max<avg){
+   status.textContent='La FC maximale ne peut pas être inférieure à la FC moyenne.';
+   return;
+ }
+ const entry={
+   date:new Date(dateValue).toISOString(),
+   session:name,
+   week,
+   level:level+1,
+   durationSec:duration*60,
+   avgHR:avg,
+   maxHR:max,
+   pctInZone:pctValue,
+   zoneSeconds:null,
+   complete:true,
+   manual:true
+ };
+ let hist=[];
+ try{hist=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){}
+ hist.unshift(entry);
+ hist.sort((a,b)=>new Date(b.date)-new Date(a.date));
+ safeSet(STORAGE.history,JSON.stringify(hist));
+ renderHistory();
+ status.textContent='Séance ajoutée à l’historique.';
+ $('manualName').value='';
+ $('manualDuration').value='';
+ $('manualAvg').value='';
+ $('manualMax').value='';
+ $('manualPct').value='';
+};
+
+$('btnExport').onclick=()=>{
+ let hist=[];try{hist=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){}
+ const payload=JSON.stringify({version:1,exportedAt:new Date().toISOString(),cardioStart:startDate,cardioHRMax:HRMAX,cardioHRRest:HRREST,cardioHistory:hist},null,2);
+ const blob=new Blob([payload],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='cardio-historique.json';
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('exportStatus').textContent='Fichier JSON exporté.';
+};
+$('fileImport').onchange=e=>{
+ const file=e.target.files[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const data=JSON.parse(reader.result);
+   if(Array.isArray(data.cardioHistory)){
+     let cur=[];try{cur=JSON.parse(safeGet(STORAGE.history)||'[]')}catch(e){}
+     const seen=new Set(cur.map(h=>h.date+'|'+h.session));
+     data.cardioHistory.forEach(h=>{if(!seen.has(h.date+'|'+h.session))cur.push(h)});
+     cur.sort((a,b)=>new Date(b.date)-new Date(a.date));
+     safeSet(STORAGE.history,JSON.stringify(cur));
+   }
+   if(data.cardioStart){startDate=data.cardioStart;safeSet(STORAGE.start,startDate);$('startDateInput').value=startDate}
+   if(data.cardioHRMax){HRMAX=Number(data.cardioHRMax)||DEFAULT_HRMAX;safeSet(STORAGE.hrmax,HRMAX);$('hrMaxInput').value=HRMAX}
+   if(data.cardioHRRest){HRREST=Number(data.cardioHRRest)||DEFAULT_HRREST;safeSet(STORAGE.hrrest,HRREST);$('hrRestInput').value=HRREST}
+   refreshProgram();resetTimer();renderHistory();
+   $('exportStatus').textContent='Historique importé avec succès.';
+  }catch(err){$('exportStatus').textContent='Fichier JSON invalide.'}
+ };
+ reader.readAsText(file);e.target.value='';
+};
+
+$('btnSaveSettings').onclick=()=>{
+ const n=Number($('hrMaxInput').value);
+ const d=$('startDateInput').value;
+ const r=Number($('hrRestInput').value);
+ if(n>=120&&n<=220){HRMAX=n;safeSet(STORAGE.hrmax,String(n))}
+ if(r>=30&&r<=120&&r<HRMAX){HRREST=r;safeSet(STORAGE.hrrest,String(r))}
+ if(d){startDate=d;safeSet(STORAGE.start,d)}
+ refreshProgram();resetTimer();
+ $('settingsStatus').textContent='Paramètres enregistrés.';
+};
+$('btnTheme').onclick=()=>{
+ const current=document.documentElement.getAttribute('data-theme');
+ const next=current==='dark'?'light':'dark';
+ document.documentElement.setAttribute('data-theme',next);
+ safeSet(STORAGE.theme,next);
+};
+const savedTheme=safeGet(STORAGE.theme);
+document.documentElement.setAttribute('data-theme','dark');
+safeSet(STORAGE.theme,'dark');
+$('hrMaxInput').value=HRMAX;
+$('hrRestInput').value=HRREST;
+$('startDateInput').value=startDate;
+refreshProgram();
+setManualDefaults();
+resetTimer();
+renderHistory();
+setTimeout(recoverSessionDraft,250);
+</script>
+<div class="small" style="margin-top:8px">📱 Écran : maintien allumé pendant la séance. À l’arrêt, le délai normal de verrouillage du téléphone reprend (réglez Android sur 30 s pour retrouver 30 s).</div>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
